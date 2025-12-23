@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Realtime Income & Schedule (1 Year)</title>
+  <style>
+    :root{--bg:#f6f8fa;--card:#fff;--muted:#666}
+    body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);margin:0;padding:24px;color:#111}
+    .container{max-width:980px;margin:0 auto}
+    h1{margin:0 0 12px;font-size:20px}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:16px}
+    .card{background:var(--card);padding:14px;border-radius:8px;box-shadow:0 1px 4px rgba(16,24,40,0.06)}
+    label{display:block;font-size:13px;margin:8px 0 6px}
+    input[type=text], input[type=number], input[type=date], select, textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #e6e9ee;font-size:14px}
+    button{padding:8px 12px;border-radius:6px;border:none;background:#2563eb;color:#fff;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
+    .list{max-height:320px;overflow:auto;margin-top:8px}
+    .row{display:flex;gap:8px;align-items:center}
+    .space{height:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;text-align:left;border-bottom:1px solid #f0f2f5;font-size:14px}
+    .small-btn{background:#e6e9ee;color:#111;padding:6px 8px;border-radius:6px}
+    .danger{background:#ef4444}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    .income-summary{display:flex;gap:12px;flex-wrap:wrap}
+    .pill{background:#f3f4f6;padding:10px;border-radius:8px;min-width:120px}
+    .right{justify-self:end}
+    @media(max-width:880px){.grid{grid-template-columns:1fr}.right{justify-self:unset}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Realtime Income & Schedule — 1 Year (Sederhana)</h1>
+    <div class="grid">
+      <div>
+        <div class="card">
+          <strong>Income (monthly)</strong>
+          <p class="muted">Tambah, ubah, atau hapus income. Semua tersimpan di browser (localStorage).</p>
+
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <select id="income-month"></select>
+            <input id="income-amount" type="number" placeholder="Amount" />
+            <button id="add-income">Tambah</button>
+          </div>
+
+          <div class="space"></div>
+
+          <div class="income-summary" id="monthly-summaries"></div>
+
+          <div class="space"></div>
+
+          <table>
+            <thead><tr><th>Bulan</th><th>Amount</th><th></th></tr></thead>
+            <tbody id="income-list"></tbody>
+          </table>
+
+          <div class="space"></div>
+          <div class="controls">
+            <button id="export-data" class="small-btn">Export JSON</button>
+            <button id="import-data" class="small-btn">Import JSON</button>
+            <button id="clear-data" class="small-btn danger">Clear All</button>
+            <input id="import-file" type="file" accept="application/json" style="display:none" />
+          </div>
+        </div>
+
+        <div style="height:16px"></div>
+
+        <div class="card">
+          <strong>Schedule (1 year)</strong>
+          <p class="muted">Tambah event dengan tanggal dan deskripsi. Bisa lihat per bulan atau seluruh tahun.</p>
+
+          <label for="event-date">Tanggal</label>
+          <input id="event-date" type="date" />
+          <label for="event-desc">Deskripsi</label>
+          <input id="event-desc" type="text" placeholder="Contoh: Meeting, Launch, Deadline" />
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="add-event">Tambah Event</button>
+            <button id="show-all" class="small-btn">Tampilkan Semua</button>
+            <select id="filter-month" style="min-width:160px">
+              <option value="all">Filter: Semua Bulan</option>
+            </select>
+          </div>
+
+          <div class="list">
+            <ul id="events-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="card">
+          <strong>Realtime Dashboard</strong>
+          <p class="muted">Angka akan berubah langsung tiap kali Anda menambah atau mengubah data.</p>
+
+          <div style="margin-top:12px">
+            <div class="pill">
+              <div style="font-size:13px;color:var(--muted)">Total Income Tahun Ini</div>
+              <div id="total-income" style="font-size:20px;font-weight:600">Rp 0</div>
+            </div>
+
+            <div style="height:10px"></div>
+
+            <div class="pill">
+              <div style="font-size:13px;color:var(--muted)">Income Rata-rata / Bulan</div>
+              <div id="avg-income" style="font-size:18px;font-weight:600">Rp 0</div>
+            </div>
+
+            <div style="height:10px"></div>
+
+            <div class="pill">
+              <div style="font-size:13px;color:var(--muted)">Events Tahun Ini</div>
+              <div id="events-count" style="font-size:18px;font-weight:600">0</div>
+            </div>
+
+          </div>
+
+          <div style="height:12px"></div>
+          <div>
+            <strong>Quick tips</strong>
+            <ul class="muted" style="padding-left:18px">
+              <li>Simpan data dengan tombol Export jika mau backup.</li>
+              <li>Import untuk mengembalikan data dari file JSON.</li>
+              <li>Data disimpan di browser — tidak dikirim ke server.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="card">
+          <strong>How to use</strong>
+          <ol class="muted" style="padding-left:18px">
+            <li>Tambah income per bulan (pilih bulan lalu masukkan nominal lalu "Tambah").</li>
+            <li>Tambah schedule dengan tanggal dan deskripsi.</li>
+            <li>Gunakan Export/Import untuk backup.</li>
+            <li>Buka file ini di browser (double click index.html).</li>
+          </ol>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+// --- Helpers ---
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+function money(n){ return 'Rp ' + Number(n).toLocaleString('id-ID') }
+
+// --- DOM ---
+const incomeMonth = document.getElementById('income-month')
+const incomeAmount = document.getElementById('income-amount')
+const addIncomeBtn = document.getElementById('add-income')
+const incomeList = document.getElementById('income-list')
+const monthlySummaries = document.getElementById('monthly-summaries')
+const totalIncomeEl = document.getElementById('total-income')
+const avgIncomeEl = document.getElementById('avg-income')
+const exportBtn = document.getElementById('export-data')
+const importBtn = document.getElementById('import-data')
+const importFile = document.getElementById('import-file')
+const clearBtn = document.getElementById('clear-data')
+
+const eventDate = document.getElementById('event-date')
+const eventDesc = document.getElementById('event-desc')
+const addEventBtn = document.getElementById('add-event')
+const eventsList = document.getElementById('events-list')
+const filterMonth = document.getElementById('filter-month')
+const showAllBtn = document.getElementById('show-all')
+const eventsCountEl = document.getElementById('events-count')
+
+// populate month selects
+function populateMonths(){
+  MONTHS.forEach((m,i)=>{
+    const opt = document.createElement('option')
+    opt.value = i
+    opt.textContent = m
+    incomeMonth.appendChild(opt)
+    const opt2 = document.createElement('option')
+    opt2.value = i
+    opt2.textContent = m
+    filterMonth.appendChild(opt2)
+  })
+}
+populateMonths()
+
+// --- Storage ---
+const STORAGE_KEY = 'simple_income_schedule_v1'
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY)
+  if(!raw) return { incomes: {}, events: [] }
+  try{ return JSON.parse(raw) }catch(e){ return { incomes: {}, events: [] } }
+}
+function save(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)) }
+
+// init state
+let state = load()
+if(!state.incomes) state.incomes = {}
+if(!state.events) state.events = []
+
+// --- Income functions ---
+function renderIncome(){
+  // list
+  incomeList.innerHTML = ''
+  monthlySummaries.innerHTML = ''
+  for(let i=0;i<12;i++){
+    const amt = state.incomes[i] || 0
+    const tr = document.createElement('tr')
+    tr.innerHTML = `<td>${MONTHS[i]}</td><td>${money(amt)}</td><td style=\"text-align:right\"><button class='small-btn' data-month='${i}'>Edit</button> <button class='small-btn danger' data-del='${i}'>Del</button></td>`
+    incomeList.appendChild(tr)
+
+    const pill = document.createElement('div')
+    pill.className = 'pill'
+    pill.innerHTML = `<div style='font-size:13px;color:var(--muted)'>${MONTHS[i]}</div><div style='font-weight:600'>${money(amt)}</div>`
+    monthlySummaries.appendChild(pill)
+  }
+
+  // totals
+  const total = Object.values(state.incomes).reduce((a,b)=>a+Number(b||0),0)
+  const avg = Math.round(total / 12)
+  totalIncomeEl.textContent = money(total)
+  avgIncomeEl.textContent = money(avg)
+
+  // attach edit/delete
+  incomeList.querySelectorAll('button').forEach(btn=>{
+    if(btn.dataset.month !== undefined){
+      btn.addEventListener('click', ()=>{
+        const m = btn.dataset.month
+        const cur = state.incomes[m] || 0
+        const val = prompt('Edit amount for '+MONTHS[m], cur)
+        if(val!==null){ state.incomes[m] = Number(val)||0; save(state); renderIncome(); }
+      })
+    }
+    if(btn.dataset.del!==undefined){
+      btn.addEventListener('click', ()=>{
+        const m = btn.dataset.del
+        if(confirm('Delete income for '+MONTHS[m]+'?')){ delete state.incomes[m]; save(state); renderIncome(); }
+      })
+    }
+  })
+}
+
+addIncomeBtn.addEventListener('click', ()=>{
+  const m = incomeMonth.value
+  const amt = Number(incomeAmount.value)
+  if(m==null || isNaN(amt)) return alert('Pilih bulan dan masukkan nominal yang benar')
+  state.incomes[m] = (Number(state.incomes[m]||0) + amt)
+  incomeAmount.value = ''
+  save(state); renderIncome();
+})
+
+// --- Events functions ---
+function renderEvents(filter='all'){
+  eventsList.innerHTML = ''
+  const items = state.events.slice().sort((a,b)=> new Date(a.date) - new Date(b.date))
+  let shown = 0
+  items.forEach((ev,i)=>{
+    const d = new Date(ev.date)
+    const monthIndex = d.getMonth()
+    if(filter!=='all' && String(filter)!==String(monthIndex)) return
+    const li = document.createElement('li')
+    li.style.padding='8px'; li.style.borderBottom='1px solid #f0f2f5'
+    li.innerHTML = `<div style='display:flex;justify-content:space-between;gap:8px'><div><strong>${ev.desc}</strong><div class='muted'>${d.toLocaleDateString()}</div></div><div><button class='small-btn' data-edit='${i}'>Edit</button> <button class='small-btn danger' data-del='${i}'>Del</button></div></div>`
+    eventsList.appendChild(li)
+    shown++
+  })
+  eventsCountEl.textContent = state.events.length
+
+  // attach buttons
+  eventsList.querySelectorAll('button').forEach(btn=>{
+    if(btn.dataset.edit!==undefined){
+      btn.addEventListener('click', ()=>{
+        const idx = Number(btn.dataset.edit)
+        const ev = state.events[idx]
+        const newDate = prompt('Edit date (YYYY-MM-DD)', ev.date)
+        const newDesc = prompt('Edit description', ev.desc)
+        if(newDate!==null && newDesc!==null){ state.events[idx] = {date:newDate, desc:newDesc}; save(state); renderEvents(filterMonth.value); renderIncome(); }
+      })
+    }
+    if(btn.dataset.del!==undefined){
+      btn.addEventListener('click', ()=>{
+        const idx = Number(btn.dataset.del)
+        if(confirm('Delete event?')){ state.events.splice(idx,1); save(state); renderEvents(filterMonth.value); }
+      })
+    }
+  })
+}
+
+addEventBtn.addEventListener('click', ()=>{
+  const d = eventDate.value
+  const desc = eventDesc.value.trim()
+  if(!d || !desc) return alert('Isi tanggal dan deskripsi event')
+  state.events.push({date:d, desc:desc})
+  eventDate.value=''; eventDesc.value=''
+  save(state); renderEvents(filterMonth.value); renderIncome();
+})
+
+showAllBtn.addEventListener('click', ()=>{ filterMonth.value='all'; renderEvents('all') })
+filterMonth.addEventListener('change', ()=>{ renderEvents(filterMonth.value) })
+
+// --- Export / Import ---
+exportBtn.addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = 'income_schedule_backup.json'
+  a.click(); URL.revokeObjectURL(url)
+})
+
+importBtn.addEventListener('click', ()=> importFile.click())
+importFile.addEventListener('change', e=>{
+  const f = e.target.files[0]
+  if(!f) return
+  const reader = new FileReader()
+  reader.onload = ()=>{
+    try{
+      const obj = JSON.parse(reader.result)
+      if(confirm('Import data? This will overwrite current data')){
+        state = obj; save(state); renderIncome(); renderEvents(filterMonth.value)
+      }
+    }catch(err){ alert('File JSON tidak valid') }
+  }
+  reader.readAsText(f)
+})
+
+clearBtn.addEventListener('click', ()=>{
+  if(confirm('Hapus semua data dari browser?')){ state = {incomes:{}, events:[]}; save(state); renderIncome(); renderEvents(); }
+})
+
+// --- init ---
+renderIncome()
+renderEvents()
+
+</script>
+</body>
+</html>
